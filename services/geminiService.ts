@@ -1,16 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 
 // Initialize the Gemini client
-// Note: In a real production app, ensure strict backend proxying for keys.
-// Here we use the environment variable as per instructions.
-const apiKey = process.env.API_KEY;
-
-let ai: GoogleGenAI | null = null;
-if (apiKey) {
-  ai = new GoogleGenAI({ apiKey });
-} else {
-  console.warn("API Key not found in process.env.API_KEY");
-}
+// Fix: Ensure initialization uses the named parameter and process.env.API_KEY directly as per guidelines.
+// We assume process.env.API_KEY is pre-configured and valid.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
  * Sends a message to the Gemini model acting as a historical guide.
@@ -19,10 +12,6 @@ export const sendChatMessage = async (
   history: { role: 'user' | 'model'; text: string }[],
   newMessage: string
 ): Promise<string> => {
-  if (!apiKey || !ai) {
-    return "系统提示：未检测到API密钥，AI导游暂时无法连接。请检查环境配置。";
-  }
-
   try {
     const chat = ai.chats.create({
       model: 'gemini-2.5-flash',
