@@ -3,8 +3,14 @@ import { GoogleGenAI } from "@google/genai";
 // Initialize the Gemini client
 // Note: In a real production app, ensure strict backend proxying for keys.
 // Here we use the environment variable as per instructions.
-const apiKey = process.env.API_KEY || '';
-const ai = new GoogleGenAI({ apiKey });
+const apiKey = process.env.API_KEY;
+
+let ai: GoogleGenAI | null = null;
+if (apiKey) {
+  ai = new GoogleGenAI({ apiKey });
+} else {
+  console.warn("API Key not found in process.env.API_KEY");
+}
 
 /**
  * Sends a message to the Gemini model acting as a historical guide.
@@ -13,8 +19,8 @@ export const sendChatMessage = async (
   history: { role: 'user' | 'model'; text: string }[],
   newMessage: string
 ): Promise<string> => {
-  if (!apiKey) {
-    return "系统提示：未检测到API密钥，AI导游暂时无法连接。";
+  if (!apiKey || !ai) {
+    return "系统提示：未检测到API密钥，AI导游暂时无法连接。请检查环境配置。";
   }
 
   try {
@@ -39,8 +45,7 @@ export const sendChatMessage = async (
 
     // Reconstruct history for context (simplified for single-turn or simple memory)
     // For robust chat, we would append history to the chat session, 
-    // but here we just send the latest message for simplicity in this demo structure,
-    // or we could map the history types if we maintained a persistent chat object.
+    // but here we just send the latest message for simplicity in this demo structure.
     
     // Using simple sendMessage for this stateless service wrapper
     const response = await chat.sendMessage({ message: newMessage });
