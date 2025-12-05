@@ -1,5 +1,13 @@
 import { GoogleGenAI } from "@google/genai";
 
+// Shim process.env for TypeScript to avoid "Cannot find name 'process'" errors during build.
+// Vite replaces `process.env.API_KEY` with the string literal at build time.
+declare const process: {
+  env: {
+    API_KEY: string;
+  };
+};
+
 // Initialize the Gemini client
 // Fix: Ensure initialization uses the named parameter and process.env.API_KEY directly as per guidelines.
 // We assume process.env.API_KEY is pre-configured and valid.
