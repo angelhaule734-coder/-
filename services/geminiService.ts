@@ -4,14 +4,25 @@ import { GoogleGenAI } from "@google/genai";
 // Vite replaces `process.env.API_KEY` with the string literal at build time.
 declare const process: {
   env: {
-    API_KEY: string;
+    API_KEY: string | undefined;
   };
 };
 
-// Initialize the Gemini client
-// Fix: Ensure initialization uses the named parameter and process.env.API_KEY directly as per guidelines.
-// We assume process.env.API_KEY is pre-configured and valid.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+let aiClient: GoogleGenAI | null = null;
+
+const getAiClient = (): GoogleGenAI => {
+  if (aiClient) return aiClient;
+
+  const apiKey = process.env.API_KEY;
+  if (!apiKey || apiKey.includes("API_KEY")) { 
+    // Check if it's undefined or if the replacement failed (still holds variable name)
+    console.warn("Gemini API Key is missing or invalid.");
+    throw new Error("Missing API Key");
+  }
+
+  aiClient = new GoogleGenAI({ apiKey });
+  return aiClient;
+};
 
 /**
  * Sends a message to the Gemini model acting as a historical guide.
@@ -21,6 +32,9 @@ export const sendChatMessage = async (
   newMessage: string
 ): Promise<string> => {
   try {
+    // Lazy init: This prevents the entire app from crashing on load if the key is missing
+    const ai = getAiClient();
+
     const chat = ai.chats.create({
       model: 'gemini-2.5-flash',
       config: {
@@ -40,15 +54,17 @@ export const sendChatMessage = async (
       },
     });
 
-    // Reconstruct history for context (simplified for single-turn or simple memory)
-    // For robust chat, we would append history to the chat session, 
-    // but here we just send the latest message for simplicity in this demo structure.
-    
-    // Using simple sendMessage for this stateless service wrapper
+    // Send message
     const response = await chat.sendMessage({ message: newMessage });
     return response.text || "讲解员正在思考，请稍后再试...";
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return "网络连接不稳定，请稍后重试。";
+    
+    const err = error as Error;
+    if (err.message === "Missing API Key") {
+      return "请在 Vercel 设置中配置 API_KEY 环境变量以启用 AI 功能。";
+    }
+    
+    return "网络连接不稳定或服务暂不可用，请稍后重试。";
   }
 };
