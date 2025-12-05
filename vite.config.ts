@@ -4,13 +4,13 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
-  // Fix: Cast process to any to avoid 'cwd' does not exist error on Process type
+  // We use (process as any).cwd() to avoid TypeScript errors if @types/node isn't perfectly resolved in the config context
   const env = loadEnv(mode, (process as any).cwd(), '');
   
   return {
     plugins: [react()],
     define: {
-      // Safely replace only the API_KEY, preserving other process.env values like NODE_ENV
+      // Safely replace process.env.API_KEY with the actual value from Vercel or .env
       'process.env.API_KEY': JSON.stringify(env.API_KEY)
     }
   }
